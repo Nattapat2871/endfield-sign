@@ -8,6 +8,22 @@
 
 A collection of unofficial Python scripts to help automate tasks for **Arknights: Endfield**. This repository includes tools for daily check-ins and fetching the latest gift codes from various community sources.
 
+---
+
+### ✨ Looking for an easier way? Try **Project Focalor**!
+
+The features in this repository are **fully integrated** into **Project Focalor**, a powerful Discord bot assistant for HoYoVerse and Endfield games.
+
+**Why use Project Focalor?**
+* **🤖 Fully Automated:** No need to run scripts manually on your PC.
+* **✅ More Stable:** Runs 24/7 with improved stability and error handling.
+* **🛡️ Safe & Secure:** Manage your accounts safely.
+* **🎁 All-in-One:** Auto Daily Check-in & Auto Redeem Codes—never miss a reward again!
+
+👉 **[Get Project Focalor Now](https://project-focalor.nattapat2871.me)**
+
+---
+
 > [!WARNING]
 > **DISCLAIMER:** This project is an **UNOFFICIAL** fan-made tool. It is not affiliated with, endorsed by, or connected to the game developers or publishers. **Use at your own risk.** The author is not responsible for any account bans or restrictions resulting from the use of these scripts.
 
@@ -59,7 +75,7 @@ python endfield_checkin.py
 #### **📜 Example Output:**
 ```text
 (.venv) PS E:\devlopers_app\Skript\Project Focalor\tests> python endfield_checkin.py
-⌨️ Github: https://github.com/Nattapat2871/endfield.py
+⌨️ Github: [https://github.com/Nattapat2871/endfield.py](https://github.com/Nattapat2871/endfield.py)
 🚀 Starting Arknights: Endfield Check-in System
 👤 Target Role ID: 3_4492964822_2
 ----------------------------------------
@@ -98,7 +114,7 @@ python endfield_code_fetcher.py
 #### **📜 Example Output:**
 ```text
 (.venv) PS E:\devlopers_app\Skript\Project Focalor\tests> python endfield_code_fetcher.py
-⌨️ Github:https://github.com/Nattapat2871/endfield.py
+⌨️ Github:[https://github.com/Nattapat2871/endfield.py](https://github.com/Nattapat2871/endfield.py)
 🚀 Starting Arknights: Endfield Code Fetcher...
 
 📡 Fetching data from: endfield_gg...
