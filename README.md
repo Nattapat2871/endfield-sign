@@ -44,27 +44,42 @@ pip install requests aiohttp beautifulsoup4 lxml
 
 ---
 
-## 🚀 Usage Guide
+## 💻 How to get Credential (Endfield)
 
-### 1. Daily Check-in (`endfield_checkin.py`)
+Follow these steps to connect the assistant to your account:
 
-This script communicates directly with the game servers to perform the daily check-in.
+### Step 1: Log in to Portal
+* Log in to the [SKPort Endfield Portal](https://game.skport.com/endfield/sign-in) with your account.
 
-#### **💻 How to get Credentials (Endfield)**
-Follow these steps to connect the script to your account:
+### Step 2: Open Developer Tools
+* Press `F12` (or `Ctrl+Shift+I` / `Cmd+Option+I`) on your browser.
+* Navigate to the **Application** tab.
 
-1.  Log in to [SKPort Endfield Portal](https://game.skport.com/endfield/sign-in).
-2.  Open Developer Tools (Press `F12`) -> Go to the **Network** tab.
-3.  Refresh the page and find a request named `zonai.skport.com` or `attendance`.
-4.  In **Request Headers**, find the `cred` and `sk-game-role` values.
+### Step 3: Get ACCOUNT_TOKEN
+1.  On the left sidebar, go to **Storage** -> **Cookies**.
+2.  Select `https://game.skport.com`.
+3.  **Refresh the page** (F5).
+4.  Find the cookie named `ACCOUNT_TOKEN` and copy its **Value**.
+5.  Paste it into the registration field.
+
+### Step 4: Get SK-GAME-ROLE
+1.  Switch to the **Network** tab in Developer Tools.
+2.  **Refresh the page** again.
+3.  In the filter/search box, type `attendance` or `zonai.skport.com`.
+4.  Click on the request name (e.g., `attendance`).
+5.  Look at the **Headers** section -> **Request Headers**.
+6.  Find the key `sk-game-role` and copy its **Value**.
+7.  Paste it into the registration field.
+
+---
 
 #### **Setup:**
 Once you have the values from the steps above, open `endfield_checkin.py` and paste them into the configuration section:
 
 ```python
 # 👇 ACCOUNT SETTINGS
-CRED = "YOUR_COPIED_CRED_VALUE"          # <--- Paste 'cred' here
-ROLE_ID = "YOUR_COPIED_SK_GAME_ROLE"     # <--- Paste 'sk-game-role' here
+ACCOUNT_TOKEN = ""   # <--- ENTER YOUR ACCOUNT HERE 
+ROLE_ID = ""         # <--- ENTER YOUR ROLE ID HERE 
 ```
 
 #### **How to Run:**
@@ -74,30 +89,24 @@ python endfield_checkin.py
 
 #### **📜 Example Output:**
 ```text
-(.venv) PS E:\devlopers_app\Skript\Project Focalor\tests> python endfield_checkin.py
-⌨️ Github: [https://github.com/Nattapat2871/endfield.py](https://github.com/Nattapat2871/endfield.py)
-🚀 Starting Arknights: Endfield Check-in System
-👤 Target Role ID: 3_449******2_2
-----------------------------------------
-🔍 1. Fetching user profile...
-   👤 Nickname: Nattapat2871
-   🆔 User ID: 730********10
-   🖼️ Avatar URL: [https://static.skport.com/image/common/20251031/46750c47729f845b4db6c404e12f771c.png](https://static.skport.com/image/common/20251031/46750c47729f845b4db6c404e12f771c.png)
-----------------------------------------
-🔄 2. Sending check-in request...
-   ✅ Already checked in today. (No action needed)
-----------------------------------------
-📅 3. Summarizing calendar status...
-   📊 Progress: Claimed 2 / 28 days
-   [Recent 3 Days Status]
-      Day 1: Intermediate Combat Record x2 -> ✅ Claimed
-            🖼️ Icon: [https://static.skport.com/asset/endfield_attendance/921A397E2765462C009B939E0CD92606.png](https://static.skport.com/asset/endfield_attendance/921A397E2765462C009B939E0CD92606.png)
-      Day 2: Arms INSP Kit x2 -> ✅ Claimed
-            🖼️ Icon: [https://static.skport.com/asset/endfield_attendance/0dea0bc0fd87138df322e8a254a6999f.png](https://static.skport.com/asset/endfield_attendance/0dea0bc0fd87138df322e8a254a6999f.png)
-      Day 3: Talosian Credit Notes|T-Creds x2000 -> ⬜ Pending
-            🖼️ Icon: [https://static.skport.com/asset/endfield_attendance/2a58a0e85f39092433842ccd62324785.png](https://static.skport.com/asset/endfield_attendance/2a58a0e85f39092433842ccd62324785.png)
-----------------------------------------
-✨ Process Completed.
+(.venv) PS E:\devlopers_app\Skript\Project Focalor\tests> py test_endfield.py 
+--- 0. Authentication Info ---
+🔑 CRED: ****************
+🔑 SIGN (Sample): ************
+🎯 SK_GAME_ROLE: *********
+
+--- 1. User Profile ---
+👤 Username: Nattapat2871
+🆔 UID (Skport): 7305348574810
+🖼️ Avatar URL: https://static.skport.com/image/common/20251031/46750c47729f845b4db6c404e12f771c.png
+
+--- 2. Check-in Result ---
+✅ Already signed in today. (Skipping POST request)
+
+--- 3. Check-in Data ---
+📅 Progress: Checked in 4 / 28 days
+🎁 Today's Reward: Oroberyl x80
+🖼️ Item Icon URL: https://static.skport.com/asset/endfield_attendance/8ed434a6cdb173c96ed0572115112f93.png
 ```
 
 ---
