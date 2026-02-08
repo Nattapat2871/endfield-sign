@@ -64,37 +64,39 @@ function runFullProcess() {
     Logger.log(`\n--- 🔑 Processing Account: ${account.name} ---`);
 
     try {
-      // 1. Authenticate (เข้าสู่ระบบ)
+      // 1. Authenticate (เข้าสู่ระบบ + ดึงชื่อ Skport)
       const authData = step1_Authenticate(account);
       
-      // 1.5 Auto-Detect Roles (หาตัวละครทั้งหมดเอง และเก็บ Server/Real UID มาด้วย)
+      // 1.5 Auto-Detect Roles (หาตัวละคร)
       const targetRoles = step1_5_FetchGameRoles(authData);
       
-      Logger.log(`   🔍 Found ${targetRoles.length} role(s) for this account.`);
+      Logger.log(`   🔍 Found ${targetRoles.length} role(s) for skport account : ${authData.skportName}`);
 
       if (targetRoles.length === 0) {
-        Logger.log("   ⚠️ No game roles found (Check if you have created a character). Skipping...");
+        Logger.log("   ⚠️ No game roles found. Skipping...");
         continue;
       }
 
       // Loop 2: วนลูปทีละตัวละคร
       for (let j = 0; j < targetRoles.length; j++) {
-        // แก้ไข: รับเป็น Object แทน String เพื่อดึงข้อมูล Server และ Real UID มาใช้
         const roleData = targetRoles[j]; 
-        const currentRoleId = roleData.fullId; // Format: "3_UID_Server" (ใช้สำหรับ Request)
-        const realUid = roleData.realUid;      // Format: "UID" (ใช้สำหรับโชว์)
-        const serverName = roleData.serverName;// Format: "Asia", etc.
+        
+        const currentRoleId = roleData.fullId;  
+        const realUid = roleData.realUid;       
+        const serverName = roleData.serverName; 
+        const gameName = roleData.gameName;     
         
         try {
-          // 2. Get Profile (ดึงข้อมูลตัวละคร)
+          // 2. Get Profile Avatar
           const profile = step2_GetUserProfile(authData, currentRoleId);
           
-          // อัปเดต Profile ให้ใช้ Real UID และเพิ่ม Server Name ลงไปใน Object (เผื่อส่ง Discord)
+          // อัปเดต Profile object เพื่อส่งไป Discord
+          profile.username = gameName; 
           profile.uid = realUid; 
           profile.serverName = serverName;
+          profile.skportName = authData.skportName; // ✅ เพิ่มบรรทัดนี้: ส่งชื่อ Skport ไปด้วย
 
-          // ✅ แสดงผล Log ตามรูปแบบที่ต้องการ
-          Logger.log(`   🎮 Checking for: ${profile.username} (UID: ${realUid}) (Server : ${serverName})`);
+          Logger.log(`   🎮 Checking for: ${gameName} (UID: ${realUid}) (Server : ${serverName})`);
 
           // 3. Check-in (เช็คชื่อและรับของ)
           const result = step3_ProcessCheckIn(authData, currentRoleId);
@@ -106,7 +108,13 @@ function runFullProcess() {
 
         } catch (innerErr) {
           Logger.log(`      ❌ Error on Role ${realUid}: ${innerErr.message}`);
-           step4_SendDiscord(account, { username: "Unknown Role", uid: realUid, serverName: serverName, avatarUrl: "" }, { 
+           step4_SendDiscord(account, { 
+             username: gameName, 
+             uid: realUid, 
+             serverName: serverName, 
+             skportName: authData.skportName, 
+             avatarUrl: "" 
+           }, { 
             success: false, 
             message: innerErr.message, 
             rewardName: "Error", 
@@ -114,14 +122,12 @@ function runFullProcess() {
           }, true);
         }
 
-        // หน่วงเวลา 1 วินาทีระหว่างตัวละครในไอดีเดียวกัน
         if (j < targetRoles.length - 1) Utilities.sleep(1000);
       }
 
     } catch (e) {
       Logger.log(`❌ Critical Error for Account ${account.name}: ${e.message}`);
-      // ส่งแจ้งเตือน Error ระดับ Account (เช่น Token ตาย)
-      step4_SendDiscord(account, { username: "System", uid: "Auth Failed", serverName: "Unknown", avatarUrl: "" }, { 
+      step4_SendDiscord(account, { username: "System", uid: "Auth Failed", serverName: "Unknown", skportName: "Unknown", avatarUrl: "" }, { 
         success: false, 
         message: e.message, 
         rewardName: "Error", 
@@ -129,26 +135,39 @@ function runFullProcess() {
       }, true);
     }
 
-    // หน่วงเวลา 2 วินาทีก่อนทำ Account ถัดไป
     if (i < ACCOUNT_LIST.length - 1) Utilities.sleep(2000);
   }
 }
 
 // =========================================================
-// 🛠️ STEP FUNCTIONS (ฟังก์ชันย่อยตามลำดับ)
+// 🛠️ STEP FUNCTIONS
 // =========================================================
 
-// ขั้นตอนที่ 1: จัดการเรื่อง Token และ Credential
+// ขั้นตอนที่ 1: Authenticate + เรียก /web/v2/user เพื่อดึงชื่อ Skport
 function step1_Authenticate(account) {
+  let token = account.token;
+
+  if (token.indexOf("%2B") !== -1) {
+    Logger.log("   ⚠️ Detected Encoded Token (%2B). Auto-fixing to (+) ...");
+    token = token.replace(/%2B/g, "+");
+  }
+
   try {
-    const authData = performOauthFlow(account.token); 
-    return authData; // { cred, salt }
+    const authData = performOauthFlow(token); 
+    const skportProfile = fetchSkportUserProfile(authData.cred, authData.salt);
+    
+    return {
+      cred: authData.cred,
+      salt: authData.salt,
+      skportName: skportProfile.nickname || "Unknown User"
+    };
+
   } catch (e) {
-    throw new Error("Authentication Failed (Check Token): " + e.message);
+    throw new Error("Authentication Failed: " + e.message);
   }
 }
 
-// ขั้นตอนที่ 1.5: ค้นหา Role ID ทั้งหมด (Auto-Detect) [แก้ไขใหม่ ดึง ServerName]
+// ขั้นตอนที่ 1.5: ค้นหา Role
 function step1_5_FetchGameRoles(authData) {
   const ts = getTimestamp();
   const path = "/api/v1/game/player/binding";
@@ -158,41 +177,30 @@ function step1_5_FetchGameRoles(authData) {
     const res = UrlFetchApp.fetch(BASE_URL + path, { method: "get", headers: headers, muteHttpExceptions: true });
     const json = JSON.parse(res.getContentText());
 
-    const foundRoles = []; // จะเก็บ Object แทน String
+    const foundRoles = []; 
     
     if (json.code === 0 && json.data && json.data.list) {
       const appList = json.data.list;
-      // วนหา appCode = endfield
       for (let app of appList) {
         if (app.appCode === "endfield" && app.bindingList) {
-          // วนทุก Binding
           for (let binding of app.bindingList) {
-             
-             // ฟังก์ชันช่วยเช็คซ้ำ
              const pushRole = (r) => {
                 const fullId = `3_${r.roleId}_${r.serverId}`;
-                // เช็คว่ามี role นี้ใน list หรือยัง
                 const isExist = foundRoles.some(item => item.fullId === fullId);
                 
                 if (!isExist) {
                   foundRoles.push({
-                    fullId: fullId,            // ใช้สำหรับส่ง API
-                    realUid: r.roleId,         // UID เพียวๆ
-                    serverName: r.serverName || "Unknown"  // ชื่อ Server (Asia, Americas...)
+                    fullId: fullId,            
+                    realUid: r.roleId,         
+                    serverName: r.serverName || "Unknown",
+                    gameName: r.nickname || "Unknown Character"
                   });
                 }
              };
 
-             // 1. เช็ค defaultRole
-             if (binding.defaultRole) {
-               pushRole(binding.defaultRole);
-             }
-             
-             // 2. เช็ค roles อื่นๆ
+             if (binding.defaultRole) pushRole(binding.defaultRole);
              if (binding.roles && binding.roles.length > 0) {
-               for (let r of binding.roles) {
-                 pushRole(r);
-               }
+               for (let r of binding.roles) pushRole(r);
              }
           }
         }
@@ -200,12 +208,12 @@ function step1_5_FetchGameRoles(authData) {
     }
     return foundRoles; 
   } catch (e) {
-    Logger.log("⚠️ Warning: Failed to fetch game roles auto-binding. " + e.message);
+    Logger.log("⚠️ Warning: Failed to fetch game roles. " + e.message);
     return [];
   }
 }
 
-// ขั้นตอนที่ 2: ดึงข้อมูลโปรไฟล์
+// ขั้นตอนที่ 2: ดึง Avatar
 function step2_GetUserProfile(authData, roleId) {
   const ts = getTimestamp();
   const path = "/web/v2/user";
@@ -218,16 +226,14 @@ function step2_GetUserProfile(authData, roleId) {
     if (json.code === 0 && json.data && json.data.user) {
       const basicUser = json.data.user.basicUser;
       return {
-        username: basicUser.nickname || "Unknown",
-        uid: roleId, // ค่านี้จะถูก overwrite ใน loop หลักด้วย realUid
+        username: basicUser.nickname || "Unknown", 
         avatarUrl: basicUser.avatar || ""
       };
     }
   } catch (e) {
-    Logger.log("⚠️ Warning: Could not fetch profile.");
+    // ignore
   }
-  
-  return { username: "Unknown User", uid: roleId, avatarUrl: "" };
+  return { username: "Unknown", avatarUrl: "" };
 }
 
 // ขั้นตอนที่ 3: เช็คชื่อประจำวัน
@@ -235,16 +241,13 @@ function step3_ProcessCheckIn(authData, roleId) {
   const path = "/web/v1/game/endfield/attendance";
   const url = BASE_URL + path;
   
-  // 3.1 ดึงปฏิทินดูสถานะก่อน
   let ts = getTimestamp();
   let headers = getHeaders(path, ts, authData.cred, authData.salt, roleId);
   
   const statusRes = UrlFetchApp.fetch(url, { method: "get", headers: headers, muteHttpExceptions: true });
   const statusData = JSON.parse(statusRes.getContentText());
 
-  if (statusData.code !== 0) {
-    throw new Error("Calendar Fetch Failed: " + (statusData.message || statusData.code));
-  }
+  if (statusData.code !== 0) throw new Error("Calendar Error: " + (statusData.message || statusData.code));
 
   const data = statusData.data || {};
   const calendar = data.calendar || [];
@@ -255,13 +258,11 @@ function step3_ProcessCheckIn(authData, roleId) {
   let message = "";
   let rewardIdx = -1;
 
-  // 3.2 ตัดสินใจว่าจะกดรับหรือไม่
   if (data.hasToday) {
     message = "✅ Already signed in today.";
     isSuccess = true;
     rewardIdx = claimedCount > 0 ? claimedCount - 1 : 0;
   } else {
-    // ต้องกดรับ (POST)
     ts = getTimestamp(); 
     headers = getHeaders(path, ts, authData.cred, authData.salt, roleId); 
     
@@ -279,7 +280,6 @@ function step3_ProcessCheckIn(authData, roleId) {
     }
   }
 
-  // 3.3 แกะข้อมูลของรางวัล
   let rewardName = "Unknown", rewardCount = 0, rewardIcon = "";
   if (rewardIdx >= 0 && rewardIdx < totalDays) {
     const awardId = calendar[rewardIdx].awardId;
@@ -300,16 +300,25 @@ function step3_ProcessCheckIn(authData, roleId) {
   };
 }
 
-// ขั้นตอนที่ 4: ส่ง Discord (เพิ่มการโชว์ Server)
+// ขั้นตอนที่ 4: ส่ง Discord (แก้ไข Layout ตรงนี้ครับ)
 function step4_SendDiscord(account, profile, result, isError = false) {
   if (!DISCORD_WEBHOOK_URL || !DISCORD_WEBHOOK_URL.startsWith("http")) return;
 
   const color = isError ? 16711680 : (result.success ? 3066993 : 15548997); 
-  const serverText = profile.serverName ? ` (${profile.serverName})` : "";
-
+  
   const fields = [];
   if (!isError) {
-    fields.push({ "name": "👤 User Info", "value": `${profile.username}\nUID: ${profile.uid}${serverText}`, "inline": false });
+    // ✅ จัดรูปแบบข้อความใหม่ตามที่ขอ
+    // Skport account : `Nattapat2871`
+    // game nickname : `นัมッ`
+    // UID: `4492964822` ( server: Asia )
+    
+    let userInfoText = "";
+    userInfoText += `Skport account : \`${profile.skportName || 'Unknown'}\`\n`;
+    userInfoText += `game nickname : \`${profile.username}\`\n`;
+    userInfoText += `UID: \`${profile.uid}\` ( server: ${profile.serverName} )`;
+
+    fields.push({ "name": "👤 User Info", "value": userInfoText, "inline": false });
     fields.push({ "name": "📅 Progress", "value": `${result.claimedCount} / ${result.totalDays} days`, "inline": true });
     fields.push({ "name": "🎁 Reward", "value": `${result.rewardName} x${result.rewardCount}`, "inline": true });
   } else {
@@ -327,7 +336,7 @@ function step4_SendDiscord(account, profile, result, isError = false) {
       "fields": fields,
       "thumbnail": { "url": result.rewardIcon || "" },
       "timestamp": new Date().toISOString(),
-      "footer": { "text": `Skport Auto Check-in | ${serverText.replace(/[()]/g,'').trim()}` }
+      "footer": { "text": "Skport Auto Check-in" }
     }]
   };
 
@@ -344,8 +353,29 @@ function step4_SendDiscord(account, profile, result, isError = false) {
 }
 
 // =========================================================
-// 🔧 HELPER FUNCTIONS (ระบบหลังบ้าน)
+// 🔧 HELPER FUNCTIONS
 // =========================================================
+
+function fetchSkportUserProfile(cred, salt) {
+  const ts = getTimestamp();
+  const path = "/web/v2/user";
+  const headers = getHeaders(path, ts, cred, salt, "");
+
+  try {
+    const res = UrlFetchApp.fetch(BASE_URL + path, { method: "get", headers: headers, muteHttpExceptions: true });
+    const json = JSON.parse(res.getContentText());
+
+    if (json.code === 0 && json.data && json.data.user && json.data.user.basicUser) {
+       return {
+         nickname: json.data.user.basicUser.nickname,
+         id: json.data.user.basicUser.id
+       };
+    }
+  } catch (e) {
+    Logger.log("⚠️ Failed to fetch Skport User Profile: " + e.message);
+  }
+  return { nickname: "Unknown Skport User", id: "" };
+}
 
 function getTimestamp() {
   return Math.floor(Date.now() / 1000).toString();
@@ -354,11 +384,13 @@ function getTimestamp() {
 function performOauthFlow(accountToken) {
   const encodedToken = encodeURIComponent(accountToken);
   
-  // Step 1: Info
   const infoRes = UrlFetchApp.fetch(`https://as.gryphline.com/user/info/v1/basic?token=${encodedToken}`, { muteHttpExceptions: true });
-  if (JSON.parse(infoRes.getContentText()).status !== 0) throw new Error("OAuth Info Failed");
+  const infoData = JSON.parse(infoRes.getContentText());
+  
+  if (infoData.status !== 0) {
+      throw new Error("OAuth Info Failed: " + (infoData.msg || infoData.message || "Unknown error"));
+  }
 
-  // Step 2: Grant
   const grantRes = UrlFetchApp.fetch("https://as.gryphline.com/user/oauth2/v2/grant", {
     method: "post",
     contentType: "application/json",
@@ -366,9 +398,8 @@ function performOauthFlow(accountToken) {
     muteHttpExceptions: true
   });
   const grantData = JSON.parse(grantRes.getContentText());
-  if (grantData.status !== 0) throw new Error("OAuth Grant Failed");
+  if (grantData.status !== 0) throw new Error("OAuth Grant Failed: " + grantData.msg);
 
-  // Step 3: Cred
   const credRes = UrlFetchApp.fetch(`${BASE_URL}/web/v1/user/auth/generate_cred_by_code`, {
     method: "post",
     headers: { "platform": "3", "content-type": "application/json" },
@@ -376,7 +407,7 @@ function performOauthFlow(accountToken) {
     muteHttpExceptions: true
   });
   const credData = JSON.parse(credRes.getContentText());
-  if (credData.code !== 0) throw new Error("Generate Cred Failed");
+  if (credData.code !== 0) throw new Error("Generate Cred Failed: " + credData.message);
 
   return { cred: credData.data.cred, salt: credData.data.token };
 }
