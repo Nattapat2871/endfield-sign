@@ -6,7 +6,6 @@
 
 ![Visitor Badge](https://api.visitorbadge.io/api/VisitorHit?user=Nattapat2871&repo=endfield.py&countColor=%237B1E7A)
 
-
 A collection of unofficial scripts to help automate tasks for **Arknights: Endfield**. This repository includes tools for daily check-ins (both Cloud and Local versions) and fetching the latest gift codes from various community sources.
 
 ---
@@ -30,7 +29,7 @@ The features in this repository are **fully integrated** into **Project Focalor*
 
 ## 📂 Included Tools
 
-1. **`endfield_checkin.gs`** (🔥 Recommended): A Google Apps Script to automate check-ins on the cloud 24/7 for free. Supports multi-account and Discord Webhook.
+1. **`endfield_checkin.gs`** (🔥 Recommended): A Google Apps Script to automate check-ins on the cloud 24/7 for free. **Now supports Auto-Detect Characters & Multi-Server!**
 2. **`endfield_checkin.py`**: A local Python script to automate the daily login/check-in process to claim rewards via the game's API.
 3. **`endfield_code_fetcher.py`**: An asynchronous scraper that gathers active gift codes from multiple fan sites (e.g., endfield.gg, GamesRadar).
 
@@ -48,7 +47,7 @@ pip install requests aiohttp beautifulsoup4 lxml
 
 ## 💻 How to get Credential (Endfield)
 
-Follow these steps to connect the assistant to your account. You will need these credentials for **both** the GS and Python versions.
+Follow these steps to connect the assistant to your account.
 
 ### Step 1: Log in to Portal
 * Log in to the [SKPort Endfield Portal](https://game.skport.com/endfield/sign-in) with your account.
@@ -57,13 +56,15 @@ Follow these steps to connect the assistant to your account. You will need these
 * Press `F12` (or `Ctrl+Shift+I` / `Cmd+Option+I`) on your browser.
 * Navigate to the **Application** tab.
 
-### Step 3: Get ACCOUNT_TOKEN
+### Step 3: Get ACCOUNT_TOKEN (Required for both GS & Python)
 1. On the left sidebar, go to **Storage** -> **Cookies**.
 2. Select `https://game.skport.com`.
 3. **Refresh the page** (F5).
 4. Find the cookie named `ACCOUNT_TOKEN` and copy its **Value**.
 
-### Step 4: Get SK-GAME-ROLE
+### Step 4: Get SK-GAME-ROLE (Required for Python / Optional for GS)
+> **Note for Google Apps Script users:** You can **SKIP** this step! The GS script now automatically detects your Role ID.
+
 1. Switch to the **Network** tab in Developer Tools.
 2. **Refresh the page** again.
 3. In the filter/search box, type `attendance` or `zonai.skport.com`.
@@ -78,14 +79,18 @@ Follow these steps to connect the assistant to your account. You will need these
 This is the recommended method. It runs automatically on Google's servers without needing your PC to be on.
 
 **✨ Features:**
-- Runs 24/7 automatically via Time-based Triggers.
-- Supports **Multiple Accounts**.
-- Sends beautiful notifications to **Discord** with dynamic timestamps.
+- **Auto-Detect Roles:** Automatically finds all characters in your account (Asia, USA, TW, etc.).
+- **Multi-Server Support:** Checks in for *every* character found, not just the main one.
+- **Zero Config:** Just paste your Token, no need to find Role IDs manually.
+- **Discord Notify:** Sends beautiful notifications with dynamic timestamps.
 
 ### 🛠️ Setup Guide
 1. Go to [Google Apps Script](https://script.google.com/) and create a **New Project**.
 2. Copy the entire code from `endfield_checkin.gs` and paste it into the editor.
-3. Fill in your `ACCOUNT_TOKEN`, `ROLE_ID`, and `DISCORD_WEBHOOK_URL` (optional) at the top of the code.
+3. **Configuration:**
+   - Paste your `ACCOUNT_TOKEN` into the `ACCOUNT_LIST`.
+   - (Optional) Paste your `DISCORD_WEBHOOK_URL`.
+   - **No need to fill `roleId`**, the script will handle it automatically!
 4. Click the **Save** icon (💾) or press `Ctrl + S`.
 5. Select `runFullProcess` from the top dropdown menu and click **▶ Run** to test it once. (Grant necessary permissions if prompted).
 
@@ -102,8 +107,6 @@ This is the recommended method. It runs automatically on Google's servers withou
 ### 📸 Discord Output Example
 <p align="center">
   <img width="458" height="530" alt="image" src="https://github.com/user-attachments/assets/98eb7619-79e8-4c12-9c27-5f454eb74081" />
-
-
 </p>
 
 ```text
@@ -128,8 +131,8 @@ Once you have the values from the steps above, open `endfield_checkin.py` and pa
 
 ```python
 # 👇 ACCOUNT SETTINGS
-ACCOUNT_TOKEN = ""   # <--- ENTER YOUR ACCOUNT HERE 
-ROLE_ID = ""         # <--- ENTER YOUR ROLE ID HERE 
+ACCOUNT_TOKEN = ""   # <--- ENTER YOUR ACCOUNT_TOKEN HERE 
+ROLE_ID = ""         # <--- ENTER YOUR ROLE_ID (SK-GAME-ROLE) HERE 
 ```
 
 #### **How to Run:**
@@ -148,7 +151,7 @@ python endfield_checkin.py
 --- 1. User Profile ---
 👤 Username: Nattapat2871
 🆔 UID (Skport): 7305348574810
-🖼️ Avatar URL: [https://static.skport.com/image/common/20251031/46750c47729f845b4db6c404e12f771c.png](https://static.skport.com/image/common/20251031/46750c47729f845b4db6c404e12f771c.png)
+🖼️ Avatar URL: [https://static.skport.com/image](https://static.skport.com/image)...
 
 --- 2. Check-in Result ---
 ✅ Already signed in today. (Skipping POST request)
@@ -156,7 +159,6 @@ python endfield_checkin.py
 --- 3. Check-in Data ---
 📅 Progress: Checked in 4 / 28 days
 🎁 Today's Reward: Oroberyl x80
-🖼️ Item Icon URL: [https://static.skport.com/asset/endfield_attendance/8ed434a6cdb173c96ed0572115112f93.png](https://static.skport.com/asset/endfield_attendance/8ed434a6cdb173c96ed0572115112f93.png)
 ```
 
 ---
@@ -173,34 +175,16 @@ python endfield_code_fetcher.py
 #### **📜 Example Output:**
 ```text
 (.venv) PS E:\devlopers_app\Skript\Project Focalor\tests> python endfield_code_fetcher.py
-⌨️ Github:[https://github.com/Nattapat2871/endfield.py](https://github.com/Nattapat2871/endfield.py)
+⌨️ Github: [https://github.com/Nattapat2871/endfield.py](https://github.com/Nattapat2871/endfield.py)
 🚀 Starting Arknights: Endfield Code Fetcher...
 
 📡 Fetching data from: endfield_gg...
    ✅ Found 4 codes
 ------------------------------
-📡 Fetching data from: gamesradar...
-   ✅ Found 1 codes
-------------------------------
-📡 Fetching data from: ldshop...
-   ✅ Found 4 codes
-------------------------------
-
+...
 📊 Summary (Total Unique Codes): 4
 🎁 Code: ENDFIELDGIFT
    Rewards: Oroberyl x500
-   Source: endfield.gg
-
-🎁 Code: ENDFIELD4PC
-   Rewards: T-Creds x13,000  Advanced Combat Record x2  Arms INSP Kit x2
-   Source: endfield.gg
-
-🎁 Code: ALLFIELD
-   Rewards: Oroberyl x1,500  T-Creds x6,000  Elementary Combat Record x30  Arms Inspector x30  Protoprism x5  Protodisk x5  Mark of Perseverance x1
-   Source: endfield.gg
-
-🎁 Code: RETURNOFALL
-   Rewards: Oroberyl x500  T-Creds x6,000  Elementary Combat Record x30  Arms Inspector x30  Protoprism x5  Protodisk x5
    Source: endfield.gg
 ```
 
