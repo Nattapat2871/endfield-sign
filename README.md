@@ -4,7 +4,7 @@
 ![JavaScript](https://img.shields.io/badge/JavaScript-GAS-yellow)
 ![License](https://img.shields.io/badge/License-MIT-green)
 
-![Visitor Badge](https://api.visitorbadge.io/api/VisitorHit?user=Nattapat2871&repo=endfield.py&countColor=%237B1E7A)
+![Visitor Badge](https://api.visitorbadge.io/api/VisitorHit?user=Nattapat2871&repo=endfield-sign&countColor=%237B1E7A)
 
 A collection of unofficial scripts to help automate tasks for **Arknights: Endfield**. This repository includes tools for daily check-ins (both Cloud and Local versions) and fetching the latest gift codes from various community sources.
 
